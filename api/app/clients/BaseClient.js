@@ -463,6 +463,27 @@ class BaseClient {
      */
     const parentMessageId = isEdited ? head : userMessage.messageId;
     this.parentMessageId = parentMessageId;
+    /** Contact context injection - retrieves relevant contacts for the user's query */
+    try {
+      const { retrieveRelevantContacts } = require('~/server/services/contactRetrieval');
+      // Combine the last 3 user messages to maintain conversational context for follow-ups
+      const userMessages = this.currentMessages.filter(m => m.isCreatedByUser).slice(-3);
+      const userQuery = userMessages.map(m => m.text).join('\n');
+      const userId = this.user?.id || this.options.req?.user?.id;
+      
+      if (userQuery && userId) {
+        const { contextBlock } = await retrieveRelevantContacts(userQuery, userId);
+        if (contextBlock) {
+          // If the endpoint supports instructions (like OpenAI/Google), add it as a system instruction
+          // Otherwise, we'll let buildMessages handle the currentMessages which now technically has the context injected via instructions
+          opts.instructions = (opts.instructions || '') + '\n\n' + contextBlock;
+          logger.debug('[BaseClient] Contact context injected for query:', userQuery.replace(/\n/g, ' '));
+        }
+      }
+    } catch (contactErr) {
+      logger.debug('[BaseClient] Contact retrieval skipped:', contactErr.message);
+    }
+
     let {
       prompt: payload,
       tokenCountMap,

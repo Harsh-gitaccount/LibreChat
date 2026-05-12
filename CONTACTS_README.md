@@ -148,8 +148,9 @@ The chat integration uses **smart retrieval + prompt context injection**, split 
 7. **Context generation** — matching contacts (max 20) are formatted into a `[CONTACTS CONTEXT]` block.
 
 **`api/app/clients/BaseClient.js`** & **`api/server/controllers/agents/client.js`** (modified) — The injection point:
-- Inside `AgentClient.buildMessages()`, the retrieval service is called with the current conversation's query.
-- If relevant contacts are found, a system instruction block containing the formatted contacts is seamlessly injected into the agent's `sharedRunContextParts` array. This ensures the prompt behaves exactly like LibreChat's native file-upload context injection.
+- Inside `BaseClient.sendMessage()` (for all standard chat models) and `AgentClient.buildMessages()` (for the Agents workspace), the retrieval service is called with the conversation context.
+- **Conversational Awareness**: The system combines the last 3 user messages to maintain context for follow-up questions (e.g., asking "Who is Indrajit?" and then "What is his status?" works seamlessly because the system remembers the previous context).
+- If relevant contacts are found, a system instruction block containing the formatted contacts is seamlessly injected into the LLM prompt. This ensures the prompt behaves exactly like LibreChat's native file-upload context injection.
 - **Fault-tolerant**: the entire retrieval is wrapped in `try/catch` — if anything fails, chat proceeds normally without context.
 
 **Why this approach over alternatives:**
