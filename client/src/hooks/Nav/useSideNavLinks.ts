@@ -3,6 +3,7 @@ import { MCPIcon, AttachmentIcon, OpenAIMinimalIcon } from '@librechat/client';
 import {
   Bot,
   Brain,
+  Contact,
   Bookmark,
   NotebookPen,
   ScrollText,
@@ -32,6 +33,7 @@ import PanelSwitch from '~/components/SidePanel/Builder/PanelSwitch';
 import Parameters from '~/components/SidePanel/Parameters/Panel';
 import { MemoryPanel } from '~/components/SidePanel/Memories';
 import FilesPanel from '~/components/SidePanel/Files/Panel';
+import { ContactsPanel } from '~/components/Contacts';
 import { PromptsAccordion } from '~/components/Prompts';
 import { SkillsAccordion } from '~/components/Skills';
 
@@ -169,6 +171,14 @@ export default function useSideNavLinks({
         Component: BookmarkPanel,
       });
     }
+
+    links.push({
+      title: 'com_ui_contacts' as TranslationKeys,
+      label: '',
+      icon: Contact,
+      id: 'contacts',
+      Component: ContactsPanel,
+    });
 
     links.push({
       title: 'com_sidepanel_attach_files',

@@ -474,6 +474,7 @@ class BaseClient {
       opts,
     );
 
+
     if (tokenCountMap && tokenCountMap[userMessage.messageId]) {
       userMessage.tokenCount = tokenCountMap[userMessage.messageId];
       logger.debug('[BaseClient] userMessage', {

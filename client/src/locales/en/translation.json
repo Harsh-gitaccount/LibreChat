@@ -1195,6 +1195,7 @@
   "com_ui_mcp_update_var": "Update {{0}}",
   "com_ui_mcp_url": "MCP Server URL",
   "com_ui_medium": "Medium",
+  "com_ui_contacts": "Contacts",
   "com_ui_memories": "Memories",
   "com_ui_memories_allow_create": "Allow creating Memories",
   "com_ui_memories_allow_opt_out": "Allow users to opt out of Memories",

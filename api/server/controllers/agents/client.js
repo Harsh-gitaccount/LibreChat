@@ -393,6 +393,26 @@ class AgentClient extends BaseClient {
       }
     }
 
+    /** Contact context injection - retrieves relevant contacts for the user's query */
+    try {
+      const { retrieveRelevantContacts } = require('~/server/services/contactRetrieval');
+      // Combine the last 3 user messages to maintain conversational context for follow-ups
+      // (e.g. "where does Bob work?" -> "what is his designation?")
+      const userMessages = orderedMessages.filter(m => m.isCreatedByUser).slice(-3);
+      const userQuery = userMessages.map(m => m.text).join('\n');
+      const userId = this.options.req?.user?.id;
+      
+      if (userQuery && userId) {
+        const { contextBlock } = await retrieveRelevantContacts(userQuery, userId);
+        if (contextBlock) {
+          sharedRunContextParts.push(contextBlock);
+          logger.debug('[AgentClient] Contact context injected for query:', userQuery.replace(/\n/g, ' '));
+        }
+      }
+    } catch (contactErr) {
+      logger.debug('[AgentClient] Contact retrieval skipped:', contactErr.message);
+    }
+
     /** Memory context (user preferences/memories) */
     const withoutKeys = await this.useMemory();
     const memoryContext = withoutKeys
