@@ -2,7 +2,15 @@
 
 ## Overview
 
-This feature extends LibreChat with a **Contacts Workspace**, allowing users to store contacts and ask the AI assistant questions about them during normal chat conversations. The system supports bulk CSV import, full-text search with relevance scoring, and smart context-aware retrieval so the assistant only receives contacts relevant to each query.
+This feature extends LibreChat with a **Contacts Workspace**, allowing users to store contacts and ask the AI assistant questions about them during normal chat conversations. 
+
+### ✨ Key Features
+- **Manual Management**: Full CRUD support—Create, Read, Update, and Delete contacts manually via a professional UI.
+- **Massive CSV Ingestion**: High-performance streaming importer capable of processing **1,000,000+ rows** without crashing the server.
+- **Schema-Agnostic Mapping**: Automatically maps any CSV columns (like `designation`, `job_title`, `first_name`) to the correct fields, and stores everything else as custom attributes.
+- **Universal AI Integration**: The assistant has access to your contacts in **any chat model** (Gemini, OpenAI, etc.).
+- **Conversational Memory**: The retrieval engine understands follow-up questions (e.g., *"Who is John?"* → *"What is his email?"*).
+- **Fast Search**: Full-text search with relevance scoring and filterable attributes (Company, Role, Tags).
 
 ---
 
