@@ -7,47 +7,60 @@ This feature extends LibreChat with a **Contacts Workspace**, allowing users to 
 ---
 
 ## Setup Instructions
+Follow these steps to run the Contacts Workspace in your local environment:
 
-### Prerequisites
-
-- Node.js 20+
-- MongoDB running locally or via Atlas
-- LibreChat cloned and set up
-
-### Installation
-
+### 0. Clone the Repository
+First, clone this repository to your local machine:
 ```bash
-# From the LibreChat root directory
+git clone https://github.com/Harsh-gitaccount/LibreChat.git
+cd LibreChat
+```
+
+### 1. Prerequisites
+- **Node.js**: Version 20 or higher is required.
+- **MongoDB**: Ensure MongoDB is running locally on the default port (27017) or provide a connection string in the `.env`.
+
+### 2. Installation
+Install all dependencies for both the API and the Client:
+```bash
+# From the root directory
 npm install
 ```
 
-The contacts feature uses the existing MongoDB connection — no additional database setup needed. Indexes are created automatically on first use.
+### 3. Configuration
+The system uses the standard LibreChat `.env` configuration. You **must** provide a Google API key for the contact retrieval and AI chat features to function:
 
-### Configuration
+1. Create a `.env` file in the root directory (you can copy `.env.example`).
+2. Add your Google API key:
+   ```env
+   GOOGLE_KEY=your_actual_google_api_key_here
+   ```
+3. (Optional) If your MongoDB is not on `localhost:27017`, set the `MONGO_URI`.
 
-Add the Google API key to your `.env` file as per LibreChat's standard configuration:
+### 4. Running the Application (Development Mode)
+For the best evaluation experience, we recommend running the development servers separately to allow for hot-reloading:
 
-```
-GOOGLE_KEY=your_api_key_here
-```
-
-### Running (Recommended for Reviewers)
-
-For the best evaluation experience, we recommend running the development servers so you don't have to wait for a full production build:
-
-**Terminal 1 (Backend API):**
+**Step A: Start the Backend API**
+Open a new terminal and run:
 ```bash
 npm run backend:dev
 ```
-*Runs on **http://localhost:3080***
+*The API will start on **http://localhost:3080***
 
-**Terminal 2 (Frontend UI):**
+**Step B: Start the Frontend UI**
+Open a second terminal and run:
 ```bash
 npm run frontend:dev
 ```
-*Runs on **http://localhost:3090***
+*The UI will start on **http://localhost:3090***
 
-Once both are running, open **http://localhost:3090** in your browser. The **Contacts** panel will appear as a new icon (person silhouette) in the LibreChat sidebar.
+### 5. Using the Feature
+Once both servers are running:
+1. Open **http://localhost:3090** in your browser.
+2. Log in (or create a local account).
+3. **IMPORTANT**: Ensure the **Google** model (e.g., Gemini 1.5 Pro) is selected in the model dropdown.
+4. Click the **Contacts** icon (person silhouette) in the left-hand sidebar to access the workspace.
+5. Use the **Import** button to upload a CSV (we support files with 1,000,000+ rows).
 
 ---
 
@@ -208,6 +221,7 @@ The current CSV import already handles 1M-row files via streaming + batching. Fo
 - **Search**: Replace MongoDB's built-in text search with **MongoDB Atlas Search** or **Elasticsearch**. MongoDB text indexes work well up to ~100K documents, but relevance ranking and query latency degrade at 1M+. Atlas Search uses Lucene internally and provides sub-100ms latency at any scale.
 
 - **Import pipeline**: Move CSV processing to a **background job queue** (e.g., BullMQ + Redis). The current synchronous HTTP request works for 10K rows but would time out for very large files. A job queue enables progress tracking, retry logic, and doesn't block the API server.
+  - *Index Optimization:* To prevent the 15-20 minute bottleneck caused by real-time text indexing during a 1M row import, the background worker would dynamically drop the text index before the import, perform a pure `bulkWrite` (which finishes in ~60 seconds), and then trigger a background index rebuild.
 
 - **Pagination**: Switch from offset-based (`skip/limit`) to **cursor-based pagination** using `_id` or `created_at` as the cursor. Offset pagination becomes O(n) at high page numbers because MongoDB must scan and discard skipped documents.
 
@@ -233,7 +247,7 @@ The current system uses keyword extraction + text search, which handles exact an
 
 - **Context window cap (Top 20 Limit)**: To prevent exceeding LLM token limits and crashing the AI, our retrieval engine strictly limits context injection to the **top 20** most relevant contacts. If a user asks "Which contacts have status REJECT?" and there are 500 rejected contacts, the AI only sees the first 20. This is an intended architectural safety constraint. If a specific contact is "missed", the user simply needs to narrow their query (e.g. "Which rejected contacts live in Hyderabad?") to bring that person into the top 20.
 
-- **Synchronous CSV Imports**: While the CSV streaming mechanism prevents RAM exhaustion, the HTTP request itself is synchronous. Importing 1,000,000 rows can take 2-5 minutes (primarily due to MongoDB building massive text indexes in real-time). Standard browsers or reverse proxies (like Nginx) often time out HTTP requests after 60-120 seconds. If a timeout occurs, the UI will report an error even though the backend continues successfully importing in the background. In production, this must be decoupled into a background worker queue (like BullMQ) that reports progress via WebSockets.
+- **Synchronous CSV Imports**: While the CSV streaming mechanism prevents RAM exhaustion, the HTTP request itself is synchronous. Importing 1,000,000 rows typically takes **15-20 minutes** on standard hardware (averaging ~1,000 inserts per second). This time is dominated by MongoDB actively tokenizing and building the massive Full-Text Search index for every single word in the dataset in real-time. Standard browsers or reverse proxies (like Nginx) often time out HTTP requests after 60-120 seconds. If a timeout occurs, the UI will report an error even though the backend continues successfully importing in the background. In production, this must be decoupled into a background worker queue (like BullMQ) that reports progress via WebSockets.
 
 - **No deduplication on import**: Re-importing the same CSV creates duplicate contacts. A production system would upsert based on email or implement fuzzy name+company dedup.
 

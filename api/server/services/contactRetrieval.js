@@ -106,7 +106,24 @@ async function retrieveRelevantContacts(userMessage, userId) {
   }
 
   if (conditions.length === 0) {
-    return { contacts: [], contextBlock: '' };
+    // If it is contact related but no specific keywords were found (e.g. 'show me my contacts')
+    // we should just return the top 20 most recent contacts instead of failing.
+    const idToSearch = typeof userId === 'object' ? userId.id || userId._id : userId;
+    const recentContacts = await Contact.find({ user: idToSearch }).sort({ created_at: -1 }).limit(20);
+    if (recentContacts.length === 0) {
+      return { contacts: [], contextBlock: '' };
+    }
+    const contactStrings = recentContacts.map((c, i) => `${i + 1}. ${c.toPromptString()}`);
+    const contextBlock = [
+      '[CONTACTS CONTEXT]',
+      'The following contacts from the user\'s workspace are available:',
+      '',
+      ...contactStrings,
+      '',
+      'Use this information to answer the user\'s question accurately. Only reference contacts listed above.',
+      '[END CONTACTS CONTEXT]',
+    ].join('\n');
+    return { contacts: recentContacts, contextBlock };
   }
 
   const idToSearch = typeof userId === 'object' ? userId.id || userId._id : userId;
